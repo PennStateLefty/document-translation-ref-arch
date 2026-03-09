@@ -58,12 +58,12 @@ jobs:
 
           FUNC_NAME=$(az deployment sub show \
             --name "$DEPLOY_NAME" \
-            --query 'properties.outputs.AZURE_FUNCTION_APP_NAME.value' \
+            --query 'properties.outputs.functionAppName.value' \
             --output tsv 2>/dev/null || true)
 
           SWA_NAME=$(az deployment sub show \
             --name "$DEPLOY_NAME" \
-            --query 'properties.outputs.AZURE_STATIC_WEB_APP_NAME.value' \
+            --query 'properties.outputs.staticWebAppName.value' \
             --output tsv 2>/dev/null || true)
 
           echo "Function App: $FUNC_NAME"

@@ -93,8 +93,8 @@ module roleAssignments 'modules/role-assignments.bicep' = {
   }
 }
 
-output AZURE_FUNCTION_APP_NAME string = functionApp.outputs.functionAppName
-output AZURE_STATIC_WEB_APP_NAME string = staticWebApp.outputs.staticWebAppName
-output AZURE_STORAGE_ACCOUNT_NAME string = storage.outputs.storageAccountName
-output AZURE_FUNCTION_APP_URL string = 'https://${functionApp.outputs.functionAppHostName}'
-output AZURE_STATIC_WEB_APP_URL string = 'https://${staticWebApp.outputs.staticWebAppDefaultHostName}'
+output functionAppName string = functionApp.outputs.functionAppName
+output staticWebAppName string = staticWebApp.outputs.staticWebAppName
+output storageAccountName string = storage.outputs.storageAccountName
+output functionAppUrl string = 'https://${functionApp.outputs.functionAppHostName}'
+output staticWebAppUrl string = 'https://${staticWebApp.outputs.staticWebAppDefaultHostName}'

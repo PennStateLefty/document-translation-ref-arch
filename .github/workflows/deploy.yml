@@ -23,7 +23,6 @@ jobs:
   infra:
     name: Deploy Infrastructure
     runs-on: ubuntu-latest
-    needs: setup-identity
     outputs:
       functionAppName: ${{ steps.deploy.outputs.functionAppName }}
       staticWebAppName: ${{ steps.deploy.outputs.staticWebAppName }}

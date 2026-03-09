@@ -87,8 +87,8 @@ module roleAssignments 'modules/role-assignments.bicep' = {
   scope: resourceGroup
   params: {
     functionAppPrincipalId: functionApp.outputs.functionAppPrincipalId
-    storageAccountId: storage.outputs.storageAccountId
-    aiServicesId: aiServices.outputs.aiServicesId
+    storageAccountName: storage.outputs.storageAccountName
+    aiServicesName: aiServices.outputs.aiServicesName
     aiServicesPrincipalId: aiServices.outputs.aiServicesPrincipalId
   }
 }

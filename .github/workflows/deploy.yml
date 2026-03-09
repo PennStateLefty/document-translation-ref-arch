@@ -37,9 +37,10 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Deploy Bicep
-        id: deploy
+        id: bicep
         run: |
           DEPLOY_NAME="deploy-$(date +%Y%m%d%H%M%S)"
+          echo "deployName=$DEPLOY_NAME" >> "$GITHUB_OUTPUT"
 
           az deployment sub create \
             --name "$DEPLOY_NAME" \
@@ -49,20 +50,31 @@ jobs:
             --parameters environmentName="${{ env.AZURE_ENV_NAME }}" \
               location="${{ env.AZURE_LOCATION }}"
 
+      - name: Get deployment outputs
+        id: deploy
+        if: always() && steps.bicep.outputs.deployName != ''
+        run: |
+          DEPLOY_NAME="${{ steps.bicep.outputs.deployName }}"
+
           FUNC_NAME=$(az deployment sub show \
             --name "$DEPLOY_NAME" \
             --query 'properties.outputs.AZURE_FUNCTION_APP_NAME.value' \
-            --output tsv)
+            --output tsv 2>/dev/null || true)
 
           SWA_NAME=$(az deployment sub show \
             --name "$DEPLOY_NAME" \
             --query 'properties.outputs.AZURE_STATIC_WEB_APP_NAME.value' \
-            --output tsv)
+            --output tsv 2>/dev/null || true)
 
           echo "Function App: $FUNC_NAME"
           echo "Static Web App: $SWA_NAME"
           echo "functionAppName=$FUNC_NAME" >> "$GITHUB_OUTPUT"
           echo "staticWebAppName=$SWA_NAME" >> "$GITHUB_OUTPUT"
+
+          if [[ -z "$FUNC_NAME" || -z "$SWA_NAME" ]]; then
+            echo "::error::Failed to retrieve deployment outputs. FUNC_NAME='$FUNC_NAME' SWA_NAME='$SWA_NAME'"
+            exit 1
+          fi
 
   deploy-api:
     name: Deploy Function App

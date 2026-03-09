@@ -143,4 +143,5 @@ jobs:
           npx @azure/static-web-apps-cli deploy ./dist \
             --subscription-id "${{ env.AZURE_SUBSCRIPTION_ID }}" \
             --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-            --app-name "${{ needs.infra.outputs.staticWebAppName }}"
+            --app-name "${{ needs.infra.outputs.staticWebAppName }}" \
+            --env production

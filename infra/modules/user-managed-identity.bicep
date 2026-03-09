@@ -46,6 +46,20 @@ resource federatedCredentialPR 'Microsoft.ManagedIdentity/userAssignedIdentities
   }
 }
 
+// Federated credential for GitHub Environments (deployment protection)
+resource federatedCredentialEnv 'Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials@2023-01-31' = {
+  parent: userManagedIdentity
+  name: 'github-deploy-env-production'
+  dependsOn: [federatedCredentialPR]
+  properties: {
+    issuer: 'https://token.actions.githubusercontent.com'
+    subject: 'repo:${repositoryOwner}/${repositoryName}:environment:production'
+    audiences: [
+      'api://AzureADTokenExchange'
+    ]
+  }
+}
+
 output umiId string = userManagedIdentity.id
 output umiPrincipalId string = userManagedIdentity.properties.principalId
 output umiClientId string = userManagedIdentity.properties.clientId

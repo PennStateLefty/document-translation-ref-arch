@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.40.2.10011",
-      "templateHash": "15620073180569979996"
+      "templateHash": "17965294757629528308"
     }
   },
   "parameters": {
@@ -466,7 +466,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.40.2.10011",
-              "templateHash": "14113213690865364502"
+              "templateHash": "9872197352174001107"
             }
           },
           "parameters": {
@@ -538,6 +538,23 @@
                 ]
               },
               "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials', format('{0}-id', parameters('namePrefix')), 'github-deploy-main')]",
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}-id', parameters('namePrefix')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials",
+              "apiVersion": "2023-01-31",
+              "name": "[format('{0}/{1}', format('{0}-id', parameters('namePrefix')), 'github-deploy-env-production')]",
+              "properties": {
+                "issuer": "https://token.actions.githubusercontent.com",
+                "subject": "[format('repo:{0}/{1}:environment:production', parameters('repositoryOwner'), parameters('repositoryName'))]",
+                "audiences": [
+                  "api://AzureADTokenExchange"
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials', format('{0}-id', parameters('namePrefix')), 'github-validate-pr')]",
                 "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('{0}-id', parameters('namePrefix')))]"
               ]
             }
@@ -809,7 +826,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.40.2.10011",
-              "templateHash": "4960814617541764536"
+              "templateHash": "14522780652048094957"
             }
           },
           "parameters": {
@@ -863,8 +880,8 @@
               "location": "[parameters('location')]",
               "tags": "[union(parameters('tags'), createObject('azd-service-name', 'web'))]",
               "sku": {
-                "name": "Free",
-                "tier": "Free"
+                "name": "Standard",
+                "tier": "Standard"
               },
               "properties": {
                 "stagingEnvironmentPolicy": "Enabled",

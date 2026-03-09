@@ -56,7 +56,6 @@ jobs:
     name: Deploy Function App
     runs-on: ubuntu-latest
     needs: infra
-    environment: production
     defaults:
       run:
         working-directory: src/api
@@ -93,7 +92,6 @@ jobs:
     name: Deploy Static Web App
     runs-on: ubuntu-latest
     needs: infra
-    environment: production
     defaults:
       run:
         working-directory: src/web

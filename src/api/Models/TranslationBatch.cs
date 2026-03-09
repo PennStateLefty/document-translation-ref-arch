@@ -10,6 +10,7 @@ public class TranslationBatch
     public string? TranslationOperationId { get; set; }
     public string SourceBlobPrefix { get; set; } = string.Empty;
     public string TargetBlobPrefix { get; set; } = string.Empty;
+    public string TargetLanguage { get; set; } = string.Empty;
     public string? Error { get; set; }
 
     public static readonly int MaxFilesPerBatch = 1000;

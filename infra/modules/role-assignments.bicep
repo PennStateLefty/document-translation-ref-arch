@@ -4,11 +4,11 @@ param functionAppPrincipalId string
 @description('Storage Account resource ID')
 param storageAccountId string
 
-@description('Translator resource ID')
-param translatorId string
+@description('AI Services resource ID')
+param aiServicesId string
 
-@description('Principal ID of the Translator system-assigned managed identity')
-param translatorPrincipalId string
+@description('Principal ID of the AI Services system-assigned managed identity')
+param aiServicesPrincipalId string
 
 // Storage Blob Data Contributor role
 var storageBlobDataContributorRoleId = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
@@ -42,7 +42,7 @@ resource storageBlobContributor 'Microsoft.Authorization/roleAssignments@2022-04
 }
 
 resource cognitiveServicesUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(translatorId, functionAppPrincipalId, cognitiveServicesUserRoleId)
+  name: guid(aiServicesId, functionAppPrincipalId, cognitiveServicesUserRoleId)
   scope: resourceGroup()
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', cognitiveServicesUserRoleId)
@@ -95,13 +95,13 @@ resource storageAccountContributor 'Microsoft.Authorization/roleAssignments@2022
   }
 }
 
-// Translator MI: Storage Blob Data Contributor (Document Translation reads source / writes translated blobs)
-resource translatorStorageBlobContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(storageAccountId, translatorPrincipalId, storageBlobDataContributorRoleId)
+// AI Services MI: Storage Blob Data Contributor (Document Translation reads source / writes translated blobs)
+resource aiServicesStorageBlobContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(storageAccountId, aiServicesPrincipalId, storageBlobDataContributorRoleId)
   scope: resourceGroup()
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContributorRoleId)
-    principalId: translatorPrincipalId
+    principalId: aiServicesPrincipalId
     principalType: 'ServicePrincipal'
   }
 }

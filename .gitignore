@@ -24,3 +24,10 @@ Thumbs.db
 
 # Azure
 .azure/
+
+# Azurite emulator
+__blobstorage*
+__queues*
+__tables*
+__azurite*
+

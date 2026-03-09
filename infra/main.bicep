@@ -37,8 +37,8 @@ module storage 'modules/storage.bicep' = {
   }
 }
 
-module translator 'modules/translator.bicep' = {
-  name: 'translator'
+module aiServices 'modules/ai-services.bicep' = {
+  name: 'ai-services'
   scope: resourceGroup
   params: {
     namePrefix: namePrefix
@@ -66,7 +66,7 @@ module functionApp 'modules/function-app.bicep' = {
     tags: tags
     storageAccountName: storage.outputs.storageAccountName
     appInsightsConnectionString: monitoring.outputs.appInsightsConnectionString
-    translatorEndpoint: translator.outputs.translatorEndpoint
+    aiServicesEndpoint: aiServices.outputs.aiServicesEndpoint
   }
 }
 
@@ -88,8 +88,8 @@ module roleAssignments 'modules/role-assignments.bicep' = {
   params: {
     functionAppPrincipalId: functionApp.outputs.functionAppPrincipalId
     storageAccountId: storage.outputs.storageAccountId
-    translatorId: translator.outputs.translatorId
-    translatorPrincipalId: translator.outputs.translatorPrincipalId
+    aiServicesId: aiServices.outputs.aiServicesId
+    aiServicesPrincipalId: aiServices.outputs.aiServicesPrincipalId
   }
 }
 

@@ -13,8 +13,8 @@ param storageAccountName string
 @description('Application Insights connection string')
 param appInsightsConnectionString string
 
-@description('Translator endpoint URL')
-param translatorEndpoint string
+@description('AI Services endpoint URL')
+param aiServicesEndpoint string
 
 resource hostingPlan 'Microsoft.Web/serverfarms@2024-04-01' = {
   name: '${namePrefix}-plan'
@@ -77,8 +77,8 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
           value: 'Authorization=AAD'
         }
         {
-          name: 'TRANSLATOR_ENDPOINT'
-          value: translatorEndpoint
+          name: 'AI_SERVICES_ENDPOINT'
+          value: aiServicesEndpoint
         }
         {
           name: 'STORAGE_ACCOUNT_NAME'

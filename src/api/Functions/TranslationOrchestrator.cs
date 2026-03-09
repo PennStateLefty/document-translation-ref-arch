@@ -113,7 +113,7 @@ public class TranslationOrchestrator
             FileSize = session.TotalFileSize / Math.Max(session.TotalFileCount, 1) // Approximate per-file size
         }).ToList();
 
-        return SplitIntoBatches(documents, session.SessionId);
+        return SplitIntoBatches(documents, session.SessionId, session.TargetLanguage);
     }
 
     /// <summary>
@@ -122,7 +122,7 @@ public class TranslationOrchestrator
     /// - Max 1,000 files per batch
     /// - Max 250 MB per batch
     /// </summary>
-    public static List<TranslationBatch> SplitIntoBatches(List<SourceDocument> documents, string sessionId)
+    public static List<TranslationBatch> SplitIntoBatches(List<SourceDocument> documents, string sessionId, string targetLanguage = "")
     {
         var batches = new List<TranslationBatch>();
         var currentBatch = new TranslationBatch
@@ -130,7 +130,8 @@ public class TranslationOrchestrator
             BatchId = Guid.NewGuid().ToString(),
             SessionId = sessionId,
             SourceBlobPrefix = $"{sessionId}/",
-            TargetBlobPrefix = $"{sessionId}/"
+            TargetBlobPrefix = $"{sessionId}/",
+            TargetLanguage = targetLanguage
         };
 
         foreach (var doc in documents)
@@ -152,7 +153,8 @@ public class TranslationOrchestrator
                     BatchId = Guid.NewGuid().ToString(),
                     SessionId = sessionId,
                     SourceBlobPrefix = $"{sessionId}/",
-                    TargetBlobPrefix = $"{sessionId}/"
+                    TargetBlobPrefix = $"{sessionId}/",
+                    TargetLanguage = targetLanguage
                 };
             }
 
@@ -185,20 +187,21 @@ public class TranslationOrchestrator
 
         try
         {
-            // Build plain container URIs — Translator MI authenticates to storage via RBAC (no SAS needed)
+            // Build container-level URIs — Document Translation API expects container URIs
+            // with prefix passed via DocumentTranslationInput filter, not baked into the path
             var storageAccountName = Environment.GetEnvironmentVariable("STORAGE_ACCOUNT_NAME")
                 ?? Environment.GetEnvironmentVariable("AzureWebJobsStorage__accountName")
                 ?? throw new InvalidOperationException("STORAGE_ACCOUNT_NAME is not configured.");
             var sourceContainerUri = new Uri(
-                $"https://{storageAccountName}.blob.core.windows.net/source-documents/{batch.SourceBlobPrefix}");
+                $"https://{storageAccountName}.blob.core.windows.net/source-documents");
             var targetContainerUri = new Uri(
-                $"https://{storageAccountName}.blob.core.windows.net/translated-documents/{batch.TargetBlobPrefix}");
+                $"https://{storageAccountName}.blob.core.windows.net/translated-documents");
 
-            // Start the batch translation
+            // Start the batch translation using the target language from the session
             var operationId = await _translationService.StartBatchTranslationAsync(
                 sourceContainerUri, targetContainerUri,
-                // We need the target language from the parent session, stored in the batch
-                "en"); // Default — real implementation would pass language through
+                batch.TargetLanguage,
+                batch.SourceBlobPrefix);
 
             batch.TranslationOperationId = operationId;
             batch.Status = BatchStatus.Running;
@@ -330,6 +333,7 @@ public class TranslationOrchestrator
             TotalSize = session.TotalFileSize,
             SourceBlobPrefix = $"{session.SessionId}/",
             TargetBlobPrefix = $"{session.SessionId}/",
+            TargetLanguage = session.TargetLanguage,
             Status = BatchStatus.Pending
         };
     }

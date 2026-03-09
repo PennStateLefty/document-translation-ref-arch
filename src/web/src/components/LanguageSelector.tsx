@@ -13,7 +13,15 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   onLanguageChange,
   disabled = false,
 }) => {
-  const [languages, setLanguages] = useState<LanguageOption[]>([]);
+  const defaultLanguages: LanguageOption[] = [
+    { code: 'en', name: 'English' },
+    { code: 'es', name: 'Spanish' },
+    { code: 'fr', name: 'French' },
+    { code: 'de', name: 'German' },
+    { code: 'ja', name: 'Japanese' },
+  ];
+
+  const [languages, setLanguages] = useState<LanguageOption[]>(defaultLanguages);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,19 +33,6 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         setError(null);
       } catch {
         setError('Failed to load languages');
-        // Provide fallback languages
-        setLanguages([
-          { code: 'es', name: 'Spanish' },
-          { code: 'fr', name: 'French' },
-          { code: 'de', name: 'German' },
-          { code: 'ja', name: 'Japanese' },
-          { code: 'zh-Hans', name: 'Chinese (Simplified)' },
-          { code: 'pt', name: 'Portuguese' },
-          { code: 'it', name: 'Italian' },
-          { code: 'ko', name: 'Korean' },
-          { code: 'ar', name: 'Arabic' },
-          { code: 'ru', name: 'Russian' },
-        ]);
       } finally {
         setLoading(false);
       }

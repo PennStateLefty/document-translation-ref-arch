@@ -1,3 +1,4 @@
+using Azure.Core;
 using Azure.Identity;
 using Azure.Storage.Blobs;
 using DocumentTranslation.Api.Services;
@@ -12,11 +13,15 @@ var host = new HostBuilder()
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
 
+        // Shared credential for both storage and translation service
+        var credential = new DefaultAzureCredential();
+        services.AddSingleton<TokenCredential>(credential);
+
         var storageAccountName = Environment.GetEnvironmentVariable("AzureWebJobsStorage__accountName");
         if (!string.IsNullOrEmpty(storageAccountName))
         {
             var blobUri = new Uri($"https://{storageAccountName}.blob.core.windows.net");
-            services.AddSingleton(new BlobServiceClient(blobUri, new DefaultAzureCredential()));
+            services.AddSingleton(new BlobServiceClient(blobUri, credential));
         }
         else
         {
@@ -25,7 +30,7 @@ var host = new HostBuilder()
         }
 
         services.AddSingleton<IBlobStorageService, BlobStorageService>();
-        services.AddSingleton<ITranslationService, TranslationService>();
+        services.AddHttpClient<ITranslationService, TranslationService>();
     })
     .Build();
 

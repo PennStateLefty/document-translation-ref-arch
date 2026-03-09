@@ -36,6 +36,7 @@ resource federatedCredentialMain 'Microsoft.ManagedIdentity/userAssignedIdentiti
 resource federatedCredentialPR 'Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials@2023-01-31' = {
   parent: userManagedIdentity
   name: 'github-validate-pr'
+  dependsOn: [federatedCredentialMain]
   properties: {
     issuer: 'https://token.actions.githubusercontent.com'
     subject: 'repo:${repositoryOwner}/${repositoryName}:pull_request'

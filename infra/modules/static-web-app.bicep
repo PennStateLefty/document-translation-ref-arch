@@ -21,8 +21,8 @@ resource staticWebApp 'Microsoft.Web/staticSites@2023-01-01' = {
   location: location
   tags: union(tags, { 'azd-service-name': 'web' })
   sku: {
-    name: 'Free'
-    tier: 'Free'
+    name: 'Standard'
+    tier: 'Standard'
   }
   properties: {
     stagingEnvironmentPolicy: 'Enabled'

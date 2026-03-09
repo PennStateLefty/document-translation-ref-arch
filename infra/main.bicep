@@ -57,18 +57,6 @@ module monitoring 'modules/monitoring.bicep' = {
   }
 }
 
-module userManagedIdentity 'modules/user-managed-identity.bicep' = {
-  name: 'user-managed-identity'
-  scope: resourceGroup
-  params: {
-    namePrefix: namePrefix
-    location: location
-    tags: tags
-    repositoryOwner: repositoryOwner
-    repositoryName: repositoryName
-  }
-}
-
 module functionApp 'modules/function-app.bicep' = {
   name: 'function-app'
   scope: resourceGroup
@@ -101,7 +89,6 @@ module roleAssignments 'modules/role-assignments.bicep' = {
     functionAppPrincipalId: functionApp.outputs.functionAppPrincipalId
     storageAccountId: storage.outputs.storageAccountId
     translatorId: translator.outputs.translatorId
-    umiPrincipalId: userManagedIdentity.outputs.umiPrincipalId
     translatorPrincipalId: translator.outputs.translatorPrincipalId
   }
 }
@@ -111,5 +98,3 @@ output AZURE_STATIC_WEB_APP_NAME string = staticWebApp.outputs.staticWebAppName
 output AZURE_STORAGE_ACCOUNT_NAME string = storage.outputs.storageAccountName
 output AZURE_FUNCTION_APP_URL string = 'https://${functionApp.outputs.functionAppHostName}'
 output AZURE_STATIC_WEB_APP_URL string = 'https://${staticWebApp.outputs.staticWebAppDefaultHostName}'
-output AZURE_UMI_CLIENT_ID string = userManagedIdentity.outputs.umiClientId
-output AZURE_UMI_NAME string = userManagedIdentity.outputs.umiName

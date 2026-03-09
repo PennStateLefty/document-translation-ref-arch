@@ -7,9 +7,6 @@ param storageAccountId string
 @description('Translator resource ID')
 param translatorId string
 
-@description('Principal ID of the User Managed Identity for GitHub Actions deployments')
-param umiPrincipalId string = ''
-
 @description('Principal ID of the Translator system-assigned managed identity')
 param translatorPrincipalId string
 
@@ -30,12 +27,6 @@ var storageAccountContributorRoleId = '17d1049b-9a84-46fb-8f53-869881c3d3ab'
 
 // Cognitive Services User role
 var cognitiveServicesUserRoleId = 'a97b65f3-24c7-4388-baec-2e87135dc908'
-
-// Contributor role (for UMI to deploy resources)
-var contributorRoleId = 'b24988ac-6180-42a0-ab88-20f7382dd24c'
-
-// User Access Administrator role (for UMI to manage RBAC during deploy)
-var userAccessAdminRoleId = '18d7d88d-d35e-4fb5-a5c3-7773c20a72d9'
 
 // Monitoring Metrics Publisher role (for AAD-authenticated App Insights telemetry)
 var monitoringMetricsPublisherRoleId = '3913510d-42f4-4e42-8a64-420c390055eb'
@@ -100,28 +91,6 @@ resource storageAccountContributor 'Microsoft.Authorization/roleAssignments@2022
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageAccountContributorRoleId)
     principalId: functionAppPrincipalId
-    principalType: 'ServicePrincipal'
-  }
-}
-
-// UMI: Contributor (deploy infrastructure)
-resource umiContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(umiPrincipalId)) {
-  name: guid(resourceGroup().id, umiPrincipalId, contributorRoleId)
-  scope: resourceGroup()
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', contributorRoleId)
-    principalId: umiPrincipalId
-    principalType: 'ServicePrincipal'
-  }
-}
-
-// UMI: User Access Administrator (manage RBAC assignments during deploy)
-resource umiUserAccessAdmin 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(umiPrincipalId)) {
-  name: guid(resourceGroup().id, umiPrincipalId, userAccessAdminRoleId)
-  scope: resourceGroup()
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', userAccessAdminRoleId)
-    principalId: umiPrincipalId
     principalType: 'ServicePrincipal'
   }
 }

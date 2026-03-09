@@ -27,7 +27,7 @@ jobs:
       functionAppName: ${{ steps.deploy.outputs.functionAppName }}
       staticWebAppName: ${{ steps.deploy.outputs.staticWebAppName }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
@@ -72,7 +72,7 @@ jobs:
       run:
         working-directory: src/api
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
@@ -109,7 +109,7 @@ jobs:
       run:
         working-directory: src/web
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2

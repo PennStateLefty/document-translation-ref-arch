@@ -2,34 +2,34 @@
 
 ```mermaid
 graph TB
-    subgraph "Client"
+    subgraph Client
         SWA["React SPA<br/>(Azure Static Web App)"]
     end
 
-    subgraph "Compute"
+    subgraph Compute
         FA["Azure Functions<br/>(Flex Consumption / Linux)<br/>.NET 10 Isolated"]
         ORCH["Durable Functions<br/>Orchestrator"]
         FA --- ORCH
     end
 
-    subgraph "Storage"
+    subgraph Storage
         BLOB["Azure Blob Storage<br/>(allowSharedKeyAccess: false)"]
-        SRC[("source-documents<br/>container")]
-        TGT[("translated-documents<br/>container")]
-        DEP[("deployments<br/>container")]
+        SRC["source-documents<br/>container"]
+        TGT["translated-documents<br/>container"]
+        DEP["deployments<br/>container"]
         BLOB --- SRC
         BLOB --- TGT
         BLOB --- DEP
     end
 
-    subgraph "AI"
+    subgraph AI
         TRANSLATOR["Azure Document Translator<br/>(Cognitive Services)<br/>(disableLocalAuth: true)"]
     end
 
-    subgraph "Observability"
-        AI["Application Insights<br/>(DisableLocalAuth: true)"]
+    subgraph Observability
+        APPINSIGHTS["Application Insights<br/>(disableLocalAuth: true)"]
         LOG["Log Analytics Workspace<br/>(disableLocalAuth: true)"]
-        AI --> LOG
+        APPINSIGHTS --> LOG
     end
 
     subgraph "Identity & CI/CD"
@@ -50,13 +50,13 @@ graph TB
     FAMI -->|"Cognitive Services User"| TRANSLATOR
 
     %% Compute to Monitoring (MI)
-    FAMI -->|"Monitoring Metrics<br/>Publisher"| AI
+    FAMI -->|"Monitoring Metrics Publisher"| APPINSIGHTS
 
     %% Translator to Storage (MI)
     TMI -->|"Blob Data Contributor<br/>(reads source / writes translated)"| BLOB
 
     %% Deployment
-    UMI -->|"Contributor +<br/>User Access Admin"| FA
+    UMI -->|"Contributor + User Access Admin"| FA
     DEP -. "blob-based deploy<br/>(SystemAssignedIdentity)" .-> FA
 
     %% FA uses its MI
@@ -67,15 +67,7 @@ graph TB
     classDef disabled fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
     classDef identity fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
     classDef client fill:#fff3e0,stroke:#e65100,color:#bf360c
-    class BLOB,TRANSLATOR,AI,LOG disabled
+
+    class BLOB,TRANSLATOR,APPINSIGHTS,LOG disabled
     class FAMI,TMI,UMI identity
     class SWA,GHA client
-```
-
-## Legend
-
-- **Green nodes** — Services with local authentication disabled
-- **Blue nodes** — Managed identities
-- **Orange nodes** — Client-facing components (React SPA, GitHub Actions)
-- **Solid labeled arrows** — RBAC role assignments (identity → service)
-- **Dashed arrows** — Credential relationships (DefaultAzureCredential, OIDC federation, deployment auth)

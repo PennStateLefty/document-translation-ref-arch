@@ -1,0 +1,26 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Node.js
+node_modules/
+dist/
+.vite/
+
+# IDE
+.idea/
+*.swp
+
+# Environment
+.env*
+local.settings.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Azure
+.azure/

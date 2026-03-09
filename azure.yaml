@@ -1,0 +1,15 @@
+name: document-translation
+metadata:
+  template: document-translation-ref-arch
+services:
+  api:
+    project: src/api
+    language: csharp
+    host: function
+  web:
+    project: src/web
+    language: js
+    host: staticwebapp
+infra:
+  provider: bicep
+  path: infra

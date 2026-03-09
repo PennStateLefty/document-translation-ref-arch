@@ -2,23 +2,74 @@
 
 A reference implementation demonstrating scalable document translation on Azure
 using Durable Functions fan-out/fan-in orchestration, batch splitting, and
-Infrastructure-as-Code patterns.
+Infrastructure-as-Code patterns. Designed for deployment into MCAPS external
+tenants with all local authentication disabled and managed identity used
+exclusively for service-to-service access.
 
 ## Architecture Overview
 
+> Full detailed diagram with RBAC roles: [docs/architecture.md](docs/architecture.md)
+
+```mermaid
+graph TB
+    subgraph "Client"
+        SWA["React SPA<br/>(Azure Static Web App)"]
+    end
+
+    subgraph "Compute"
+        FA["Azure Functions<br/>(Flex Consumption / Linux)<br/>.NET 10 Isolated"]
+        ORCH["Durable Functions<br/>Orchestrator"]
+        FA --- ORCH
+    end
+
+    subgraph "Storage"
+        BLOB["Azure Blob Storage<br/>(allowSharedKeyAccess: false)"]
+        SRC[("source-documents<br/>container")]
+        TGT[("translated-documents<br/>container")]
+        DEP[("deployments<br/>container")]
+        BLOB --- SRC
+        BLOB --- TGT
+        BLOB --- DEP
+    end
+
+    subgraph "AI"
+        TRANSLATOR["Azure Document Translator<br/>(Cognitive Services)<br/>(disableLocalAuth: true)"]
+    end
+
+    subgraph "Observability"
+        AI["Application Insights<br/>(DisableLocalAuth: true)"]
+        LOG["Log Analytics Workspace<br/>(disableLocalAuth: true)"]
+        AI --> LOG
+    end
+
+    subgraph "Identity & CI/CD"
+        FAMI["Function App<br/>System MI"]
+        TMI["Translator<br/>System MI"]
+        UMI["User-Assigned MI<br/>(GitHub OIDC Federation)"]
+        GHA["GitHub Actions<br/>(OIDC)"]
+        GHA -. "federated credentials" .-> UMI
+    end
+
+    SWA -->|"Linked Backend"| FA
+    FAMI -->|"Blob Data Owner<br/>Queue Data Contributor<br/>Table Data Contributor<br/>Storage Account Contributor"| BLOB
+    FAMI -->|"Cognitive Services User"| TRANSLATOR
+    FAMI -->|"Monitoring Metrics<br/>Publisher"| AI
+    TMI -->|"Blob Data Contributor<br/>(reads source / writes translated)"| BLOB
+    UMI -->|"Contributor +<br/>User Access Admin"| FA
+    DEP -. "blob-based deploy<br/>(SystemAssignedIdentity)" .-> FA
+    FA -. "DefaultAzureCredential" .-> FAMI
+    TRANSLATOR -. "system MI" .-> TMI
+
+    classDef disabled fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef identity fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef client fill:#fff3e0,stroke:#e65100,color:#bf360c
+    class BLOB,TRANSLATOR,AI,LOG disabled
+    class FAMI,TMI,UMI identity
+    class SWA,GHA client
 ```
-┌──────────────┐    ┌──────────────────┐    ┌─────────────────────┐
-│  React SPA   │───▶│  Azure Functions  │───▶│  Azure Document     │
-│  (Static Web │    │  (Durable Tasks)  │    │  Translation API    │
-│   App)       │    │                   │    │                     │
-└──────────────┘    └────────┬─────────┘    └─────────────────────┘
-                             │
-                    ┌────────▼─────────┐
-                    │  Azure Blob      │
-                    │  Storage         │
-                    │  (source/target) │
-                    └──────────────────┘
-```
+
+All service-to-service communication uses **managed identity with RBAC** — no
+API keys, connection strings, or SAS tokens.
 
 ### Key Patterns Demonstrated
 
@@ -31,13 +82,19 @@ Infrastructure-as-Code patterns.
   under `infra/`, deployable via Azure Developer CLI
 - **Polling-based Status**: Frontend polls backend at 5-second intervals for
   translation progress updates
+- **Zero Local Auth / MCAPS-Ready**: All services disable local authentication
+  (shared keys, API keys, instrumentation keys). Every service-to-service
+  connection uses system-assigned managed identity with least-privilege RBAC
+- **Flex Consumption Plan**: Function App runs on the Flex Consumption SKU
+  (Linux) with blob-based deployment, managed identity deployment auth, and
+  auto-scaling up to 100 instances
 
 ## Quick Start
 
 ### Prerequisites
 
 - [Azure Developer CLI (azd)](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd)
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 - [Node.js 20+](https://nodejs.org/)
 - [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli)
 - An Azure subscription
@@ -118,6 +175,27 @@ dotnet test DocumentTranslation.Api.Tests/
 cd src/web
 npm test
 ```
+
+## Security Model
+
+This reference architecture is designed for deployment into MCAPS external
+tenants where local authentication must be disabled on all services:
+
+| Service | Local Auth | Identity | RBAC Roles |
+|---------|-----------|----------|------------|
+| **Storage Account** | `allowSharedKeyAccess: false` | Function App system MI | Blob Data Owner, Blob Data Contributor, Queue Data Contributor, Table Data Contributor, Storage Account Contributor |
+| | | Translator system MI | Blob Data Contributor (read source / write translated) |
+| **Cognitive Services (Translator)** | `disableLocalAuth: true` | Function App system MI | Cognitive Services User |
+| **Application Insights** | `DisableLocalAuth: true` | Function App system MI | Monitoring Metrics Publisher |
+| **Log Analytics Workspace** | `disableLocalAuth: true` | — | — |
+| **Function App** | SCM & FTP basic auth disabled | System-assigned MI | — |
+| **GitHub Actions (CI/CD)** | OIDC federated credentials | User-assigned MI | Contributor, User Access Administrator |
+
+- **No API keys or connection strings** are used in application code
+- `BlobServiceClient` authenticates via `DefaultAzureCredential`
+- `DocumentTranslationClient` authenticates via `DefaultAzureCredential`
+- App Insights telemetry uses `Authorization=AAD` authentication
+- Translator accesses blob storage via its own system MI (no SAS tokens)
 
 ## Architecture Decisions
 

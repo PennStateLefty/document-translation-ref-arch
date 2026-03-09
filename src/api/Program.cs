@@ -1,3 +1,4 @@
+using Azure.Identity;
 using Azure.Storage.Blobs;
 using DocumentTranslation.Api.Services;
 using Microsoft.Azure.Functions.Worker;
@@ -11,10 +12,18 @@ var host = new HostBuilder()
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
 
-        var storageConnection = Environment.GetEnvironmentVariable("AzureWebJobsStorage") 
-            ?? "UseDevelopmentStorage=true";
-        
-        services.AddSingleton(new BlobServiceClient(storageConnection));
+        var storageAccountName = Environment.GetEnvironmentVariable("AzureWebJobsStorage__accountName");
+        if (!string.IsNullOrEmpty(storageAccountName))
+        {
+            var blobUri = new Uri($"https://{storageAccountName}.blob.core.windows.net");
+            services.AddSingleton(new BlobServiceClient(blobUri, new DefaultAzureCredential()));
+        }
+        else
+        {
+            // Local development with Azurite
+            services.AddSingleton(new BlobServiceClient("UseDevelopmentStorage=true"));
+        }
+
         services.AddSingleton<IBlobStorageService, BlobStorageService>();
         services.AddSingleton<ITranslationService, TranslationService>();
     })

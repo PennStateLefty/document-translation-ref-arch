@@ -1,0 +1,138 @@
+name: Deploy — Infrastructure & Application
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/**'
+      - 'src/**'
+      - 'azure.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
+  AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  AZURE_RESOURCE_GROUP: rg-${{ vars.AZURE_ENV_NAME }}
+
+jobs:
+  infra:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    outputs:
+      functionAppName: ${{ steps.deploy.outputs.functionAppName }}
+      staticWebAppName: ${{ steps.deploy.outputs.staticWebAppName }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy Bicep
+        id: deploy
+        run: |
+          result=$(az deployment sub create \
+            --name "deploy-$(date +%Y%m%d%H%M%S)" \
+            --location "${{ env.AZURE_LOCATION }}" \
+            --template-file infra/main.bicep \
+            --parameters infra/main.parameters.json \
+            --parameters environmentName="${{ env.AZURE_ENV_NAME }}" \
+              location="${{ env.AZURE_LOCATION }}" \
+            --query 'properties.outputs' \
+            --output json)
+
+          echo "functionAppName=$(echo "$result" | jq -r '.AZURE_FUNCTION_APP_NAME.value')" >> "$GITHUB_OUTPUT"
+          echo "staticWebAppName=$(echo "$result" | jq -r '.AZURE_STATIC_WEB_APP_NAME.value')" >> "$GITHUB_OUTPUT"
+
+  deploy-api:
+    name: Deploy Function App
+    runs-on: ubuntu-latest
+    needs: infra
+    defaults:
+      run:
+        working-directory: src/api
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build
+        run: dotnet publish --configuration Release --output ./publish
+
+      - name: Package for deployment
+        run: cd publish && zip -r ../publish.zip .
+
+      - name: Deploy to Azure Functions (Flex Consumption)
+        run: |
+          az functionapp deploy \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --name "${{ needs.infra.outputs.functionAppName }}" \
+            --src-path publish.zip \
+            --type zip
+
+  deploy-web:
+    name: Deploy Static Web App
+    runs-on: ubuntu-latest
+    needs: infra
+    defaults:
+      run:
+        working-directory: src/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: src/web/package-lock.json
+
+      - name: Install & Build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Get SWA Deployment Token
+        id: swa-token
+        run: |
+          TOKEN=$(az staticwebapp secrets list \
+            --name "${{ needs.infra.outputs.staticWebAppName }}" \
+            --query 'properties.apiKey' \
+            --output tsv)
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy to Static Web App
+        uses: azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ steps.swa-token.outputs.token }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: src/web
+          output_location: dist
+          skip_app_build: true

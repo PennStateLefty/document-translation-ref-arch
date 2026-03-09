@@ -39,18 +39,30 @@ jobs:
       - name: Deploy Bicep
         id: deploy
         run: |
-          result=$(az deployment sub create \
-            --name "deploy-$(date +%Y%m%d%H%M%S)" \
+          DEPLOY_NAME="deploy-$(date +%Y%m%d%H%M%S)"
+
+          az deployment sub create \
+            --name "$DEPLOY_NAME" \
             --location "${{ env.AZURE_LOCATION }}" \
             --template-file infra/main.bicep \
             --parameters infra/main.parameters.json \
             --parameters environmentName="${{ env.AZURE_ENV_NAME }}" \
-              location="${{ env.AZURE_LOCATION }}" \
-            --query 'properties.outputs' \
-            --output json)
+              location="${{ env.AZURE_LOCATION }}"
 
-          echo "functionAppName=$(echo "$result" | jq -r '.AZURE_FUNCTION_APP_NAME.value')" >> "$GITHUB_OUTPUT"
-          echo "staticWebAppName=$(echo "$result" | jq -r '.AZURE_STATIC_WEB_APP_NAME.value')" >> "$GITHUB_OUTPUT"
+          FUNC_NAME=$(az deployment sub show \
+            --name "$DEPLOY_NAME" \
+            --query 'properties.outputs.AZURE_FUNCTION_APP_NAME.value' \
+            --output tsv)
+
+          SWA_NAME=$(az deployment sub show \
+            --name "$DEPLOY_NAME" \
+            --query 'properties.outputs.AZURE_STATIC_WEB_APP_NAME.value' \
+            --output tsv)
+
+          echo "Function App: $FUNC_NAME"
+          echo "Static Web App: $SWA_NAME"
+          echo "functionAppName=$FUNC_NAME" >> "$GITHUB_OUTPUT"
+          echo "staticWebAppName=$SWA_NAME" >> "$GITHUB_OUTPUT"
 
   deploy-api:
     name: Deploy Function App
@@ -110,6 +122,7 @@ jobs:
 
       - name: Install & Build
         run: |
+          export NODE_ENV=development
           npm ci
           npm run build
 

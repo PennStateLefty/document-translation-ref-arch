@@ -20,40 +20,6 @@ env:
   AZURE_RESOURCE_GROUP: rg-${{ vars.AZURE_ENV_NAME }}
 
 jobs:
-  setup-identity:
-    name: Setup Deployment Identity
-    runs-on: ubuntu-latest
-    steps:
-      - name: Azure Login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Ensure UMI role assignments
-        run: |
-          UMI_PRINCIPAL_ID=$(az identity show \
-            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-            --name "${{ vars.AZURE_UMI_NAME }}" \
-            --query principalId -o tsv)
-
-          # Contributor – deploy infrastructure
-          az role assignment create \
-            --assignee-object-id "$UMI_PRINCIPAL_ID" \
-            --assignee-principal-type ServicePrincipal \
-            --role Contributor \
-            --scope "/subscriptions/${{ env.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP }}" \
-            2>/dev/null || true
-
-          # User Access Administrator – manage RBAC during deploy
-          az role assignment create \
-            --assignee-object-id "$UMI_PRINCIPAL_ID" \
-            --assignee-principal-type ServicePrincipal \
-            --role "User Access Administrator" \
-            --scope "/subscriptions/${{ env.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP }}" \
-            2>/dev/null || true
-
   infra:
     name: Deploy Infrastructure
     runs-on: ubuntu-latest

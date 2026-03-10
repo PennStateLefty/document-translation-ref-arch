@@ -26,6 +26,7 @@ jobs:
     outputs:
       functionAppName: ${{ steps.deploy.outputs.functionAppName }}
       staticWebAppName: ${{ steps.deploy.outputs.staticWebAppName }}
+      storageAccountName: ${{ steps.deploy.outputs.storageAccountName }}
     steps:
       - uses: actions/checkout@v6
 
@@ -67,13 +68,20 @@ jobs:
             --query 'properties.outputs.staticWebAppName.value' \
             --output tsv 2>/dev/null || true)
 
+          STORAGE_NAME=$(az deployment sub show \
+            --name "$DEPLOY_NAME" \
+            --query 'properties.outputs.storageAccountName.value' \
+            --output tsv 2>/dev/null || true)
+
           echo "Function App: $FUNC_NAME"
           echo "Static Web App: $SWA_NAME"
+          echo "Storage Account: $STORAGE_NAME"
           echo "functionAppName=$FUNC_NAME" >> "$GITHUB_OUTPUT"
           echo "staticWebAppName=$SWA_NAME" >> "$GITHUB_OUTPUT"
+          echo "storageAccountName=$STORAGE_NAME" >> "$GITHUB_OUTPUT"
 
-          if [[ -z "$FUNC_NAME" || -z "$SWA_NAME" ]]; then
-            echo "::error::Failed to retrieve deployment outputs. FUNC_NAME='$FUNC_NAME' SWA_NAME='$SWA_NAME'"
+          if [[ -z "$FUNC_NAME" || -z "$SWA_NAME" || -z "$STORAGE_NAME" ]]; then
+            echo "::error::Failed to retrieve deployment outputs. FUNC_NAME='$FUNC_NAME' SWA_NAME='$SWA_NAME' STORAGE_NAME='$STORAGE_NAME'"
             exit 1
           fi
 
@@ -91,6 +99,22 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Get runner IP
+        id: ip
+        run: |
+          RUNNER_IP=$(curl -sf https://api.ipify.org)
+          echo "Runner IP: $RUNNER_IP"
+          echo "runnerIp=$RUNNER_IP" >> "$GITHUB_OUTPUT"
+
+      - name: Allow runner IP on storage firewall
+        run: |
+          az storage account network-rule add \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --account-name "${{ needs.infra.outputs.storageAccountName }}" \
+            --ip-address "${{ steps.ip.outputs.runnerIp }}"
+          echo "Waiting for firewall rule to propagate..."
+          sleep 30
+
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v5
         with:
@@ -104,10 +128,19 @@ jobs:
           popd
 
       - name: Deploy to Azure Functions (Flex Consumption)
+        id: deploy
         uses: Azure/functions-action@v1
         with:
           app-name: ${{ needs.infra.outputs.functionAppName }}
           package: './src/api/output'
+
+      - name: Remove runner IP from storage firewall
+        if: always() && steps.ip.outputs.runnerIp != ''
+        run: |
+          az storage account network-rule remove \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --account-name "${{ needs.infra.outputs.storageAccountName }}" \
+            --ip-address "${{ steps.ip.outputs.runnerIp }}"
 
   deploy-web:
     name: Deploy Static Web App

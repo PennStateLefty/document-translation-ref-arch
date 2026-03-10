@@ -120,11 +120,11 @@ public class TranslationService : ITranslationService
             string url;
             if (!string.IsNullOrEmpty(_aiServicesEndpoint))
             {
-                url = $"{_aiServicesEndpoint}/translator/text/v3.0/languages?scope=translation";
+                url = $"{_aiServicesEndpoint}/languages?api-version=2025-10-01-preview";
             }
             else
             {
-                url = "https://api.cognitive.microsofttranslator.com/languages?api-version=3.0&scope=translation";
+                url = "https://api.cognitive.microsofttranslator.com/languages?api-version=2025-10-01-preview";
             }
 
             var response = await _httpClient.GetAsync(url);

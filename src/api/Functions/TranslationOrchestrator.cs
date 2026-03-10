@@ -174,7 +174,7 @@ public class TranslationOrchestrator
 
     /// <summary>
     /// T041/T042: Translate a single batch using the Document Translation batch API.
-    /// Starts translation, then polls for completion.
+    /// Starts translation, then polls for completion via the SDK.
     /// </summary>
     [Function("TranslateBatch")]
     public async Task<TranslationResult> TranslateBatch(
@@ -197,20 +197,20 @@ public class TranslationOrchestrator
             var targetContainerUri = new Uri(
                 $"https://{storageAccountName}.blob.core.windows.net/translated-documents");
 
-            // Start the batch translation using the target language from the session
-            var operationId = await _translationService.StartBatchTranslationAsync(
+            // Start the batch translation and wait for completion using the SDK
+            var operation = await _translationService.StartBatchTranslationAsync(
                 sourceContainerUri, targetContainerUri,
                 batch.TargetLanguage,
                 batch.SourceBlobPrefix);
 
-            batch.TranslationOperationId = operationId;
+            batch.TranslationOperationId = operation.Id;
             batch.Status = BatchStatus.Running;
 
             _logger.LogInformation("Batch {BatchId} submitted as operation {OperationId}",
-                batch.BatchId, operationId);
+                batch.BatchId, operation.Id);
 
-            // Poll for completion
-            var result = await MonitorBatchTranslation(batch);
+            // Wait for completion via the SDK's built-in polling
+            var result = await _translationService.WaitForTranslationAsync(operation, batch.BatchId);
 
             _logger.LogInformation("Batch {BatchId} completed with status {Status}",
                 batch.BatchId, result.Status);
@@ -229,49 +229,6 @@ public class TranslationOrchestrator
                 Error = $"Translation failed: {ex.Message}"
             };
         }
-    }
-
-    /// <summary>
-    /// T042: Monitor a batch translation operation until it reaches a terminal state.
-    /// Polls the Document Translation API at increasing intervals.
-    /// </summary>
-    private async Task<TranslationResult> MonitorBatchTranslation(TranslationBatch batch)
-    {
-        if (string.IsNullOrEmpty(batch.TranslationOperationId))
-        {
-            return new TranslationResult
-            {
-                BatchId = batch.BatchId,
-                Status = BatchStatus.Failed,
-                Error = "No operation ID available for monitoring."
-            };
-        }
-
-        var maxAttempts = 360; // 30 minutes at 5-second intervals
-        var pollInterval = TimeSpan.FromSeconds(5);
-
-        for (int attempt = 0; attempt < maxAttempts; attempt++)
-        {
-            var result = await _translationService.GetTranslationStatusAsync(
-                batch.TranslationOperationId, batch.BatchId);
-
-            if (result.Status == BatchStatus.Succeeded ||
-                result.Status == BatchStatus.Failed ||
-                result.Status == BatchStatus.PartiallySucceeded ||
-                result.Status == BatchStatus.Cancelled)
-            {
-                return result;
-            }
-
-            await Task.Delay(pollInterval);
-        }
-
-        return new TranslationResult
-        {
-            BatchId = batch.BatchId,
-            Status = BatchStatus.Failed,
-            Error = "Translation timed out after 30 minutes."
-        };
     }
 
     /// <summary>

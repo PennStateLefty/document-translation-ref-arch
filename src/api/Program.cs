@@ -1,3 +1,4 @@
+using Azure.AI.Translation.Document;
 using Azure.Core;
 using Azure.Identity;
 using Azure.Storage.Blobs;
@@ -30,6 +31,15 @@ var host = new HostBuilder()
         }
 
         services.AddSingleton<IBlobStorageService, BlobStorageService>();
+
+        // Document Translation SDK client (managed identity auth)
+        var aiServicesEndpoint = Environment.GetEnvironmentVariable("AI_SERVICES_ENDPOINT");
+        if (!string.IsNullOrEmpty(aiServicesEndpoint))
+        {
+            services.AddSingleton(new DocumentTranslationClient(
+                new Uri(aiServicesEndpoint), credential));
+        }
+
         services.AddHttpClient<ITranslationService, TranslationService>();
     })
     .Build();

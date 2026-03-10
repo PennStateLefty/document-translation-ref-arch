@@ -1,12 +1,13 @@
 namespace DocumentTranslation.Api.Services;
 
 using System.Text.Json.Serialization;
+using Azure.AI.Translation.Document;
 using DocumentTranslation.Api.Models;
 
 public interface ITranslationService
 {
-    Task<string> StartBatchTranslationAsync(Uri sourceContainerUri, Uri targetContainerUri, string targetLanguage, string? sourcePrefix = null);
-    Task<TranslationResult> GetTranslationStatusAsync(string operationId, string batchId);
+    Task<DocumentTranslationOperation> StartBatchTranslationAsync(Uri sourceContainerUri, Uri targetContainerUri, string targetLanguage, string? sourcePrefix = null);
+    Task<TranslationResult> WaitForTranslationAsync(DocumentTranslationOperation operation, string batchId);
     Task<List<LanguageInfo>> GetSupportedLanguagesAsync();
 }
 

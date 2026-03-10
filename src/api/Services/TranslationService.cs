@@ -1,200 +1,111 @@
-using System.Net.Http.Headers;
-using System.Text;
 using System.Text.Json;
+using Azure.AI.Translation.Document;
 using Azure.Core;
-using Azure.Identity;
 using DocumentTranslation.Api.Models;
 using Microsoft.Extensions.Logging;
 
 namespace DocumentTranslation.Api.Services;
 
 /// <summary>
-/// Calls the Document Translation REST API directly with bearer-token auth,
-/// modeled after the working Python function app (no SDK dependency).
+/// Translates documents using the Azure.AI.Translation.Document SDK v2.0.0
+/// with managed-identity (TokenCredential) authentication.
 /// </summary>
 public class TranslationService : ITranslationService
 {
-    private const string ApiVersion = "2024-05-01";
-    private static readonly string[] TokenScopes = ["https://cognitiveservices.azure.com/.default"];
-
+    private readonly DocumentTranslationClient _client;
     private readonly HttpClient _httpClient;
-    private readonly TokenCredential _credential;
     private readonly ILogger<TranslationService> _logger;
     private readonly string? _aiServicesEndpoint;
 
-    public TranslationService(HttpClient httpClient, TokenCredential credential, ILogger<TranslationService> logger)
+    public TranslationService(
+        DocumentTranslationClient client,
+        HttpClient httpClient,
+        ILogger<TranslationService> logger)
     {
+        _client = client;
         _httpClient = httpClient;
-        _credential = credential;
         _logger = logger;
         _aiServicesEndpoint = Environment.GetEnvironmentVariable("AI_SERVICES_ENDPOINT")?.TrimEnd('/');
     }
 
-    private async Task<string> GetBearerTokenAsync()
-    {
-        var tokenResult = await _credential.GetTokenAsync(
-            new TokenRequestContext(TokenScopes), CancellationToken.None);
-        return tokenResult.Token;
-    }
-
-    public async Task<string> StartBatchTranslationAsync(
+    public async Task<DocumentTranslationOperation> StartBatchTranslationAsync(
         Uri sourceContainerUri, Uri targetContainerUri, string targetLanguage, string? sourcePrefix = null)
     {
         _logger.LogInformation("Starting batch translation to {TargetLanguage}", targetLanguage);
         _logger.LogInformation("Source: {SourceUri}, Prefix: {Prefix}", sourceContainerUri, sourcePrefix);
         _logger.LogInformation("Target: {TargetUri}", targetContainerUri);
 
-        if (string.IsNullOrEmpty(_aiServicesEndpoint))
-        {
-            _logger.LogWarning("AI_SERVICES_ENDPOINT not configured. Returning mock operation ID.");
-            return $"mock-operation-{Guid.NewGuid()}";
-        }
-
-        // Build the batch request per the Document Translation REST API
-        // POST {endpoint}/translator/document/batches?api-version=2024-05-01
-        var sourceObj = new Dictionary<string, object>
-        {
-            ["sourceUrl"] = sourceContainerUri.ToString()
-        };
+        var source = new TranslationSource(sourceContainerUri);
         if (!string.IsNullOrEmpty(sourcePrefix))
         {
-            sourceObj["filter"] = new { prefix = sourcePrefix };
+            source.Prefix = sourcePrefix;
         }
 
-        var body = new
-        {
-            inputs = new[]
-            {
-                new
-                {
-                    source = sourceObj,
-                    targets = new[]
-                    {
-                        new
-                        {
-                            targetUrl = targetContainerUri.ToString(),
-                            language = targetLanguage
-                        }
-                    }
-                }
-            }
-        };
+        var target = new TranslationTarget(targetContainerUri, targetLanguage);
 
-        var url = $"{_aiServicesEndpoint}/translator/document/batches?api-version={ApiVersion}";
-        var token = await GetBearerTokenAsync();
+        var input = new DocumentTranslationInput(source, new[] { target });
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, url);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        request.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+        var operation = await _client.StartTranslationAsync(input);
 
-        var response = await _httpClient.SendAsync(request);
-        var responseBody = await response.Content.ReadAsStringAsync();
+        _logger.LogInformation("Translation operation started: {OperationId}", operation.Id);
 
-        if (!response.IsSuccessStatusCode)
-        {
-            _logger.LogError("Batch translation start failed ({StatusCode}): {Body}",
-                (int)response.StatusCode, responseBody);
-            throw new HttpRequestException(
-                $"Document Translation API returned {(int)response.StatusCode}: {responseBody}");
-        }
-
-        // Operation-Location header contains the status URL including the operation ID
-        // e.g. https://.../translator/document/batches/{id}?api-version=...
-        if (response.Headers.TryGetValues("Operation-Location", out var locationValues))
-        {
-            var operationUrl = locationValues.First();
-            _logger.LogInformation("Translation operation started: {OperationUrl}", operationUrl);
-            // Return the full operation URL — we'll poll it directly
-            return operationUrl;
-        }
-
-        throw new InvalidOperationException(
-            "Document Translation API did not return an Operation-Location header.");
+        return operation;
     }
 
-    public async Task<TranslationResult> GetTranslationStatusAsync(string operationUrl, string batchId)
+    public async Task<TranslationResult> WaitForTranslationAsync(DocumentTranslationOperation operation, string batchId)
     {
-        _logger.LogInformation("Checking status at {OperationUrl}", operationUrl);
-
-        if (operationUrl.StartsWith("mock-operation-"))
-        {
-            _logger.LogInformation("Mock operation — returning succeeded status");
-            return new TranslationResult
-            {
-                BatchId = batchId,
-                Status = BatchStatus.Succeeded,
-                TranslatedFileCount = 1,
-                FailedFileCount = 0
-            };
-        }
+        _logger.LogInformation("Waiting for translation operation {OperationId} to complete", operation.Id);
 
         try
         {
-            var token = await GetBearerTokenAsync();
+            await operation.WaitForCompletionAsync();
 
-            using var request = new HttpRequestMessage(HttpMethod.Get, operationUrl);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            var response = await _httpClient.SendAsync(request);
-            var body = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogError("Status check failed ({StatusCode}): {Body}",
-                    (int)response.StatusCode, body);
-                return new TranslationResult
-                {
-                    BatchId = batchId,
-                    Status = BatchStatus.Failed,
-                    Error = $"Status API returned {(int)response.StatusCode}: {body}"
-                };
-            }
-
-            using var doc = JsonDocument.Parse(body);
-            var root = doc.RootElement;
-            var statusStr = root.GetProperty("status").GetString() ?? "";
-
-            var status = statusStr.ToLowerInvariant() switch
-            {
-                "succeeded" => BatchStatus.Succeeded,
-                "failed" => BatchStatus.Failed,
-                "cancelled" or "cancelling" => BatchStatus.Cancelled,
-                "running" => BatchStatus.Running,
-                "notstarted" => BatchStatus.Submitted,
-                "validating" => BatchStatus.Submitted,
-                _ => BatchStatus.Submitted
-            };
-
-            int translatedCount = 0, failedCount = 0;
-            if (root.TryGetProperty("summary", out var summary))
-            {
-                translatedCount = summary.TryGetProperty("success", out var s) ? s.GetInt32() : 0;
-                failedCount = summary.TryGetProperty("failed", out var f) ? f.GetInt32() : 0;
-            }
+            _logger.LogInformation("Operation {OperationId} completed with status {Status}",
+                operation.Id, operation.Status);
 
             string? error = null;
-            if (status == BatchStatus.Failed && root.TryGetProperty("error", out var errorEl))
+            int failedCount = operation.DocumentsFailed;
+
+            if (failedCount > 0)
             {
-                error = errorEl.TryGetProperty("message", out var msg) ? msg.GetString() : "Translation failed.";
+                // Collect error details from failed documents
+                var errors = new List<string>();
+                await foreach (var docStatus in operation.GetDocumentStatusesAsync())
+                {
+                    if (docStatus.Error != null)
+                    {
+                        errors.Add($"{docStatus.SourceDocumentUri}: {docStatus.Error.Message}");
+                    }
+                }
+                error = string.Join("; ", errors);
             }
+
+            var status = operation.Status switch
+            {
+                var s when s == DocumentTranslationStatus.Succeeded => BatchStatus.Succeeded,
+                var s when s == DocumentTranslationStatus.Failed => BatchStatus.Failed,
+                var s when s == DocumentTranslationStatus.Canceled || s == DocumentTranslationStatus.Canceling
+                    => BatchStatus.Cancelled,
+                _ => BatchStatus.Failed
+            };
 
             return new TranslationResult
             {
                 BatchId = batchId,
                 Status = status,
-                TranslatedFileCount = translatedCount,
+                TranslatedFileCount = operation.DocumentsSucceeded,
                 FailedFileCount = failedCount,
                 Error = error
             };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to get translation status");
+            _logger.LogError(ex, "Failed waiting for translation operation {OperationId}", operation.Id);
             return new TranslationResult
             {
                 BatchId = batchId,
                 Status = BatchStatus.Failed,
-                Error = $"Failed to check status: {ex.Message}"
+                Error = $"Translation failed: {ex.Message}"
             };
         }
     }

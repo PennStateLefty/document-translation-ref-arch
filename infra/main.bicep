@@ -66,7 +66,7 @@ module functionApp 'modules/function-app.bicep' = {
     tags: tags
     storageAccountName: storage.outputs.storageAccountName
     appInsightsConnectionString: monitoring.outputs.appInsightsConnectionString
-    aiServicesEndpoint: aiServices.outputs.aiServicesEndpoint
+    aiServicesEndpoint: aiServices.outputs.translatorEndpoint
   }
 }
 
@@ -88,8 +88,8 @@ module roleAssignments 'modules/role-assignments.bicep' = {
   params: {
     functionAppPrincipalId: functionApp.outputs.functionAppPrincipalId
     storageAccountName: storage.outputs.storageAccountName
-    aiServicesName: aiServices.outputs.aiServicesName
-    aiServicesPrincipalId: aiServices.outputs.aiServicesPrincipalId
+    translatorName: aiServices.outputs.translatorName
+    translatorPrincipalId: aiServices.outputs.translatorPrincipalId
   }
 }
 

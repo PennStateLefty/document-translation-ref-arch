@@ -4,11 +4,11 @@ param functionAppPrincipalId string
 @description('Storage Account name')
 param storageAccountName string
 
-@description('AI Services account name')
-param aiServicesName string
+@description('Translator account name')
+param translatorName string
 
-@description('Principal ID of the AI Services system-assigned managed identity')
-param aiServicesPrincipalId string
+@description('Principal ID of the Translator system-assigned managed identity')
+param translatorPrincipalId string
 
 // Role definition IDs
 var storageBlobDataContributorRoleId = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
@@ -24,8 +24,8 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing 
   name: storageAccountName
 }
 
-resource aiServices 'Microsoft.CognitiveServices/accounts@2024-10-01' existing = {
-  name: aiServicesName
+resource translator 'Microsoft.CognitiveServices/accounts@2024-10-01' existing = {
+  name: translatorName
 }
 
 // Function App: Storage Blob Data Contributor
@@ -41,8 +41,8 @@ resource storageBlobContributor 'Microsoft.Authorization/roleAssignments@2022-04
 
 // Function App: Cognitive Services User
 resource cognitiveServicesUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(aiServices.id, functionAppPrincipalId, cognitiveServicesUserRoleId)
-  scope: aiServices
+  name: guid(translator.id, functionAppPrincipalId, cognitiveServicesUserRoleId)
+  scope: translator
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', cognitiveServicesUserRoleId)
     principalId: functionAppPrincipalId
@@ -94,13 +94,13 @@ resource storageAccountContributor 'Microsoft.Authorization/roleAssignments@2022
   }
 }
 
-// AI Services MI: Storage Blob Data Contributor (Document Translation reads source / writes translated blobs)
-resource aiServicesStorageBlobContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(storageAccount.id, aiServicesPrincipalId, storageBlobDataContributorRoleId)
+// Translator MI: Storage Blob Data Contributor (Document Translation reads source / writes translated blobs)
+resource translatorStorageBlobContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(storageAccount.id, translatorPrincipalId, storageBlobDataContributorRoleId)
   scope: storageAccount
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContributorRoleId)
-    principalId: aiServicesPrincipalId
+    principalId: translatorPrincipalId
     principalType: 'ServicePrincipal'
   }
 }

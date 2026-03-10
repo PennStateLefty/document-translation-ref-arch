@@ -15,14 +15,17 @@ using Microsoft.Extensions.Logging;
 // Must be created before any SDK clients so the listener is active for their lifetime.
 using var azureSdkListener = new AzureEventSourceListener((args, message) =>
 {
-    // ILoggerFactory isn't available yet at this point, so write to console.
-    // Once the host is built we switch to ILogger below.
+    // Skip MSAL noise — MSAL emits at EventLevel.LogAlways (0) for routine token cache
+    // operations, which would otherwise be misclassified as errors.
+    if (args.EventSource.Name.StartsWith("Azure-Identity", StringComparison.Ordinal))
+        return;
+
     var isHttpError = Regex.IsMatch(message, @"Status:\s*[45]\d{2}");
-    if (isHttpError || args.Level <= EventLevel.Error)
+    if (isHttpError || args.Level is EventLevel.Critical or EventLevel.Error)
     {
         Console.Error.WriteLine("[Azure SDK ERROR] {0}", message);
     }
-    else if (args.Level <= EventLevel.Warning)
+    else if (args.Level == EventLevel.Warning)
     {
         Console.WriteLine("[Azure SDK WARN] {0}", message);
     }

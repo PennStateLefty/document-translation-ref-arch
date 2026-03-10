@@ -1,32 +1,31 @@
-@description('Name prefix for the AI Services resource')
+@description('Name prefix for the Translator resource')
 param namePrefix string
 
-@description('Azure region')
+@description('Azure region — must be a specific geographic region (not Global) for Document Translation managed identity support')
 param location string = resourceGroup().location
 
 @description('Tags to apply to all resources')
 param tags object = {}
 
-resource aiServices 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
-  name: '${namePrefix}-aiservices'
+resource translator 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
+  name: '${namePrefix}-translator'
   location: location
   tags: tags
-  kind: 'AIServices'
+  kind: 'TextTranslation'
   sku: {
-    name: 'S0'
+    name: 'S1'
   }
   properties: {
-    customSubDomainName: '${namePrefix}-aiservices'
+    customSubDomainName: '${namePrefix}-translator'
     publicNetworkAccess: 'Enabled'
     disableLocalAuth: true
-    allowProjectManagement: true
   }
   identity: {
     type: 'SystemAssigned'
   }
 }
 
-output aiServicesId string = aiServices.id
-output aiServicesEndpoint string = aiServices.properties.endpoint
-output aiServicesName string = aiServices.name
-output aiServicesPrincipalId string = aiServices.identity.principalId
+output translatorId string = translator.id
+output translatorEndpoint string = translator.properties.endpoint
+output translatorName string = translator.name
+output translatorPrincipalId string = translator.identity.principalId

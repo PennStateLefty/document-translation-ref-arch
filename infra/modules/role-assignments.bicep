@@ -10,6 +10,9 @@ param translatorName string
 @description('Principal ID of the Translator system-assigned managed identity')
 param translatorPrincipalId string
 
+@description('Principal ID of the deployer identity (e.g. GitHub Actions UMI) for storage data-plane access')
+param deployerPrincipalId string = ''
+
 // Role definition IDs
 var storageBlobDataContributorRoleId = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
 var storageBlobDataOwnerRoleId = 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b'
@@ -112,6 +115,17 @@ resource monitoringMetricsPublisher 'Microsoft.Authorization/roleAssignments@202
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', monitoringMetricsPublisherRoleId)
     principalId: functionAppPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// Deployer UMI: Storage Blob Data Contributor (push deployment packages to the deployments container)
+resource deployerStorageBlobContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(deployerPrincipalId)) {
+  name: guid(storageAccount.id, deployerPrincipalId, storageBlobDataContributorRoleId)
+  scope: storageAccount
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContributorRoleId)
+    principalId: deployerPrincipalId
     principalType: 'ServicePrincipal'
   }
 }

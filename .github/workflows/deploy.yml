@@ -48,7 +48,8 @@ jobs:
             --template-file infra/main.bicep \
             --parameters infra/main.parameters.json \
             --parameters environmentName="${{ env.AZURE_ENV_NAME }}" \
-              location="${{ env.AZURE_LOCATION }}"
+              location="${{ env.AZURE_LOCATION }}" \
+              deployerPrincipalId="${{ secrets.DEPLOYER_PRINCIPAL_ID }}"
 
       - name: Get deployment outputs
         id: deploy

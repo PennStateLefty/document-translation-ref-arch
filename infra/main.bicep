@@ -12,11 +12,8 @@ param location string
 @description('Tags to apply to all resources')
 param tags object = {}
 
-@description('GitHub repository owner (org or user)')
-param repositoryOwner string
-
-@description('GitHub repository name')
-param repositoryName string
+@description('Principal ID (object ID) of the deployer identity (e.g. GitHub Actions UMI) for storage data-plane access during deployment')
+param deployerPrincipalId string = ''
 
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
 var namePrefix = '${environmentName}-${resourceToken}'
@@ -78,7 +75,6 @@ module staticWebApp 'modules/static-web-app.bicep' = {
     location: location
     tags: tags
     functionAppResourceId: functionApp.outputs.functionAppId
-    repositoryUrl: 'https://github.com/${repositoryOwner}/${repositoryName}'
   }
 }
 
@@ -90,6 +86,7 @@ module roleAssignments 'modules/role-assignments.bicep' = {
     storageAccountName: storage.outputs.storageAccountName
     translatorName: aiServices.outputs.translatorName
     translatorPrincipalId: aiServices.outputs.translatorPrincipalId
+    deployerPrincipalId: deployerPrincipalId
   }
 }
 

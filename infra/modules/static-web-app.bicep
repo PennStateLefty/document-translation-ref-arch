@@ -10,12 +10,6 @@ param tags object = {}
 @description('Function App resource ID to link as backend')
 param functionAppResourceId string = ''
 
-@description('GitHub repository URL (e.g. https://github.com/owner/repo)')
-param repositoryUrl string = ''
-
-@description('Branch to deploy from')
-param repositoryBranch string = 'main'
-
 resource staticWebApp 'Microsoft.Web/staticSites@2023-01-01' = {
   name: '${namePrefix}-swa'
   location: location
@@ -27,13 +21,6 @@ resource staticWebApp 'Microsoft.Web/staticSites@2023-01-01' = {
   properties: {
     stagingEnvironmentPolicy: 'Enabled'
     allowConfigFileUpdates: true
-    repositoryUrl: !empty(repositoryUrl) ? repositoryUrl : null
-    branch: !empty(repositoryUrl) ? repositoryBranch : null
-    buildProperties: !empty(repositoryUrl) ? {
-      appLocation: 'src/web'
-      outputLocation: 'dist'
-      skipGithubActionWorkflowGeneration: true
-    } : null
   }
 }
 

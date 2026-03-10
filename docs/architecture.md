@@ -71,3 +71,4 @@ graph TB
     class BLOB,TRANSLATOR,APPINSIGHTS,LOG disabled
     class FAMI,TMI,UMI identity
     class SWA,GHA client
+```

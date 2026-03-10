@@ -8,11 +8,8 @@
     "location": {
       "value": "${AZURE_LOCATION}"
     },
-    "repositoryOwner": {
-      "value": "${AZURE_REPOSITORY_OWNER}"
-    },
-    "repositoryName": {
-      "value": "${AZURE_REPOSITORY_NAME}"
+    "deployerPrincipalId": {
+      "value": "${DEPLOYER_PRINCIPAL_ID}"
     }
   }
 }

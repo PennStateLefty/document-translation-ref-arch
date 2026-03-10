@@ -8,7 +8,7 @@ param location string = resourceGroup().location
 param tags object = {}
 
 resource translator 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
-  name: '${namePrefix}-translator'
+  name: '${namePrefix}-doctranslator'
   location: location
   tags: tags
   kind: 'TextTranslation'
@@ -16,7 +16,7 @@ resource translator 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
     name: 'S1'
   }
   properties: {
-    customSubDomainName: '${namePrefix}-translator'
+    customSubDomainName: '${namePrefix}-doctranslator'
     publicNetworkAccess: 'Enabled'
     disableLocalAuth: true
   }

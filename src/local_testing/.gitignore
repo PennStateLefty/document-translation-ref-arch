@@ -1,0 +1,10 @@
+# Local testing artifacts
+translated_output/
+.env
+bin/
+obj/
+
+# Keep sample_docs/ folder but ignore its contents
+# (users provide their own test files)
+sample_docs/*
+!sample_docs/.gitkeep

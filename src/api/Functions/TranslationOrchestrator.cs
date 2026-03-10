@@ -275,6 +275,11 @@ public class TranslationOrchestrator
             session.Error = $"Translation partially failed. {failedBatchCount} of {results.Count} batches failed.";
             _logger.LogWarning("Session {SessionId} partially failed. {FailedBatches}/{TotalBatches} batches failed. {TranslatedCount} files translated, {FailedCount} files failed.",
                 session.SessionId, failedBatchCount, results.Count, totalTranslated, totalFailed);
+
+            foreach (var result in results.Where(r => r.Status != BatchStatus.Succeeded))
+            {
+                _logger.LogError("Batch {BatchId} failed — {Error}", result.BatchId, result.Error);
+            }
         }
 
         return Task.FromResult(session);

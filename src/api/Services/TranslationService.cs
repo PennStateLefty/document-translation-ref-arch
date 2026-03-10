@@ -74,7 +74,9 @@ public class TranslationService : ITranslationService
                 {
                     if (docStatus.Error != null)
                     {
-                        errors.Add($"{docStatus.SourceDocumentUri}: {docStatus.Error.Message}");
+                        _logger.LogError("Document translation failed — Source: {SourceUri}, Code: {ErrorCode}, Message: {ErrorMessage}",
+                            docStatus.SourceDocumentUri, docStatus.Error.Code, docStatus.Error.Message);
+                        errors.Add($"{docStatus.SourceDocumentUri}: [{docStatus.Error.Code}] {docStatus.Error.Message}");
                     }
                 }
                 error = string.Join("; ", errors);

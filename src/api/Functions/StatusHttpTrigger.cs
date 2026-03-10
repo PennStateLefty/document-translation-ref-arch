@@ -35,11 +35,9 @@ public class StatusHttpTrigger
 
         var response = req.CreateResponse(HttpStatusCode.OK);
 
-        // Parse the orchestration output or custom status
-        var session = instance.ReadOutputAs<TranslationSession>();
-        
-        if (session != null && (instance.RuntimeStatus == OrchestrationRuntimeStatus.Completed 
-            || instance.RuntimeStatus == OrchestrationRuntimeStatus.Failed))
+        if ((instance.RuntimeStatus == OrchestrationRuntimeStatus.Completed 
+            || instance.RuntimeStatus == OrchestrationRuntimeStatus.Failed)
+            && instance.ReadOutputAs<TranslationSession>() is { } session)
         {
             var statusResponse = new
             {

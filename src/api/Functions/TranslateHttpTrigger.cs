@@ -151,41 +151,90 @@ public class TranslateHttpTrigger
     {
         var fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var files = new List<(string, byte[])>();
-        using var reader = new StreamReader(body, leaveOpen: true);
-        var content = await reader.ReadToEndAsync();
 
-        var parts = content.Split(new[] { $"--{boundary}" }, StringSplitOptions.RemoveEmptyEntries);
-        foreach (var part in parts)
+        // Read the entire body as raw bytes to preserve binary file content.
+        using var ms = new MemoryStream();
+        await body.CopyToAsync(ms);
+        var allBytes = ms.ToArray();
+
+        var boundaryBytes = System.Text.Encoding.UTF8.GetBytes($"--{boundary}");
+        var headerSeparator = new byte[] { 0x0D, 0x0A, 0x0D, 0x0A }; // \r\n\r\n
+
+        var partPositions = FindAllOccurrences(allBytes, boundaryBytes);
+
+        for (int i = 0; i < partPositions.Count - 1; i++)
         {
-            if (part.Trim() == "--") continue;
+            var partStart = partPositions[i] + boundaryBytes.Length;
+            var partEnd = partPositions[i + 1];
 
-            var headerEnd = part.IndexOf("\r\n\r\n");
-            if (headerEnd < 0) continue;
+            // Skip leading \r\n after boundary
+            if (partStart + 1 < allBytes.Length && allBytes[partStart] == 0x0D && allBytes[partStart + 1] == 0x0A)
+                partStart += 2;
 
-            var headers = part[..headerEnd];
-            var partBody = part[(headerEnd + 4)..].TrimEnd('\r', '\n');
+            // Find the header/body separator within this part
+            var headerEndIdx = FindSequence(allBytes, headerSeparator, partStart, partEnd);
+            if (headerEndIdx < 0) continue;
 
-            if (headers.Contains("filename="))
+            var headerText = System.Text.Encoding.UTF8.GetString(allBytes, partStart, headerEndIdx - partStart);
+            var bodyStart = headerEndIdx + headerSeparator.Length;
+
+            // Trim trailing \r\n before next boundary
+            var bodyEnd = partEnd;
+            if (bodyEnd >= 2 && allBytes[bodyEnd - 1] == 0x0A && allBytes[bodyEnd - 2] == 0x0D)
+                bodyEnd -= 2;
+
+            if (headerText.Contains("filename="))
             {
-                var fileNameMatch = System.Text.RegularExpressions.Regex.Match(headers, @"filename=""?([^"";\r\n]+)""?");
+                var fileNameMatch = System.Text.RegularExpressions.Regex.Match(headerText, @"filename=""?([^"";\r\n]+)""?");
                 if (!fileNameMatch.Success) continue;
 
                 var fileName = fileNameMatch.Groups[1].Value.Trim();
-                var fileBytes = System.Text.Encoding.UTF8.GetBytes(partBody);
+                var fileBytes = new byte[bodyEnd - bodyStart];
+                Array.Copy(allBytes, bodyStart, fileBytes, 0, fileBytes.Length);
                 files.Add((fileName, fileBytes));
             }
             else
             {
-                // Form field
-                var nameMatch = System.Text.RegularExpressions.Regex.Match(headers, @"name=""?([^"";\r\n]+)""?");
+                var nameMatch = System.Text.RegularExpressions.Regex.Match(headerText, @"name=""?([^"";\r\n]+)""?");
                 if (nameMatch.Success)
                 {
-                    fields[nameMatch.Groups[1].Value.Trim()] = partBody.Trim();
+                    var value = System.Text.Encoding.UTF8.GetString(allBytes, bodyStart, bodyEnd - bodyStart).Trim();
+                    fields[nameMatch.Groups[1].Value.Trim()] = value;
                 }
             }
         }
 
         return (fields, files);
+    }
+
+    private static List<int> FindAllOccurrences(byte[] data, byte[] pattern)
+    {
+        var positions = new List<int>();
+        for (int i = 0; i <= data.Length - pattern.Length; i++)
+        {
+            bool match = true;
+            for (int j = 0; j < pattern.Length; j++)
+            {
+                if (data[i + j] != pattern[j]) { match = false; break; }
+            }
+            if (match) positions.Add(i);
+        }
+        return positions;
+    }
+
+    private static int FindSequence(byte[] data, byte[] pattern, int start, int end)
+    {
+        var limit = Math.Min(end, data.Length) - pattern.Length;
+        for (int i = start; i <= limit; i++)
+        {
+            bool match = true;
+            for (int j = 0; j < pattern.Length; j++)
+            {
+                if (data[i + j] != pattern[j]) { match = false; break; }
+            }
+            if (match) return i;
+        }
+        return -1;
     }
 
     private static string GetContentType(string fileName) => Path.GetExtension(fileName).ToLowerInvariant() switch

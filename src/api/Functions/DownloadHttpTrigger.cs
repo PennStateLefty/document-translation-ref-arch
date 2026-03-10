@@ -50,27 +50,54 @@ public class DownloadHttpTrigger
 
         // List translated files
         var translatedFiles = await _blobStorageService.ListBlobsAsync("translated-documents", $"{sessionId}/");
+        _logger.LogWarning("Listed {BlobCount} blobs in translated-documents/{SessionId}/", translatedFiles.Count, sessionId);
 
         if (translatedFiles.Count == 0)
         {
-            _logger.LogWarning("No translated files found for session {SessionId}", sessionId);
+            _logger.LogError("No translated files found for session {SessionId}", sessionId);
             var noFiles = req.CreateResponse(HttpStatusCode.NotFound);
             await noFiles.WriteAsJsonAsync(new { error = "No translated files available for this session." });
             return noFiles;
         }
 
-        // Create zip archive
+        // Create zip archive — buffer each blob into a MemoryStream to avoid
+        // streaming disposal issues with the network stream from DownloadStreamingAsync
         var zipStream = new MemoryStream();
         using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Create, leaveOpen: true))
         {
             foreach (var blobPath in translatedFiles)
             {
                 var fileName = Path.GetFileName(blobPath);
-                var entry = archive.CreateEntry(fileName, CompressionLevel.Fastest);
-                using var entryStream = entry.Open();
-                using var blobStream = await _blobStorageService.DownloadBlobAsync("translated-documents", blobPath);
-                await blobStream.CopyToAsync(entryStream);
+                try
+                {
+                    using var blobStream = await _blobStorageService.DownloadBlobAsync("translated-documents", blobPath);
+
+                    // Buffer the blob content so the network stream is fully consumed
+                    using var blobBuffer = new MemoryStream();
+                    await blobStream.CopyToAsync(blobBuffer);
+                    blobBuffer.Position = 0;
+
+                    _logger.LogWarning("Downloaded blob {BlobPath} ({Bytes} bytes)", blobPath, blobBuffer.Length);
+
+                    var entry = archive.CreateEntry(fileName, CompressionLevel.Fastest);
+                    using var entryStream = entry.Open();
+                    await blobBuffer.CopyToAsync(entryStream);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to download blob {BlobPath} for session {SessionId}", blobPath, sessionId);
+                }
             }
+        }
+
+        _logger.LogWarning("Zip archive created for session {SessionId}: {ZipSize} bytes", sessionId, zipStream.Length);
+
+        if (zipStream.Length == 0)
+        {
+            _logger.LogError("Zip archive is empty for session {SessionId} despite {BlobCount} blobs listed", sessionId, translatedFiles.Count);
+            var emptyZip = req.CreateResponse(HttpStatusCode.InternalServerError);
+            await emptyZip.WriteAsJsonAsync(new { error = "Failed to create download archive." });
+            return emptyZip;
         }
 
         zipStream.Position = 0;
@@ -78,7 +105,7 @@ public class DownloadHttpTrigger
         var response = req.CreateResponse(HttpStatusCode.OK);
         response.Headers.Add("Content-Type", "application/zip");
         response.Headers.Add("Content-Disposition", $"attachment; filename=\"translated-{sessionId}.zip\"");
-        response.Body = zipStream;
+        await zipStream.CopyToAsync(response.Body);
 
         _logger.LogInformation("Download prepared for session {SessionId} with {FileCount} files", 
             sessionId, translatedFiles.Count);

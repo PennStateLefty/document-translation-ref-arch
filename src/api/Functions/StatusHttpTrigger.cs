@@ -23,7 +23,7 @@ public class StatusHttpTrigger
     {
         _logger.LogInformation("Status request for session {SessionId}", sessionId);
 
-        var instance = await durableClient.GetInstanceAsync(sessionId);
+        var instance = await durableClient.GetInstanceAsync(sessionId, getInputsAndOutputs: true);
 
         if (instance == null)
         {

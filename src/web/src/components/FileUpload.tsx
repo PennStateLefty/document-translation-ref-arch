@@ -60,6 +60,9 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesSelected, disabled = fal
             <p style={{ color: '#666', fontSize: '0.9em' }}>
               Supported formats: PDF, DOCX, XLSX, PPTX, HTML, TXT
             </p>
+            <p style={{ color: '#666', fontSize: '0.9em' }}>
+              Max file size: 30 MB
+            </p>
           </div>
         )}
       </div>

@@ -44,17 +44,17 @@ public class ValidationTests
     }
 
     [Fact]
-    public void MaxFileSize_Is100MB()
+    public void MaxFileSize_Is30MB()
     {
-        SourceDocument.MaxFileSize.Should().Be(100L * 1024 * 1024);
+        SourceDocument.MaxFileSize.Should().Be(30L * 1024 * 1024);
     }
 
     [Theory]
     [InlineData(1, true)]
     [InlineData(1024, true)]
-    [InlineData(100 * 1024 * 1024, true)]       // Exactly 100 MB — valid
-    [InlineData(100 * 1024 * 1024 + 1, false)]   // 100 MB + 1 byte — invalid
-    [InlineData(200 * 1024 * 1024L, false)]       // 200 MB — invalid
+    [InlineData(30 * 1024 * 1024, true)]       // Exactly 30 MB — valid
+    [InlineData(30 * 1024 * 1024 + 1, false)]   // 30 MB + 1 byte — invalid
+    [InlineData(100 * 1024 * 1024L, false)]      // 100 MB — invalid
     public void FileSize_ValidationRules(long fileSize, bool expectedValid)
     {
         // Act

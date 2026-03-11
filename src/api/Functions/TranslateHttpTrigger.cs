@@ -59,7 +59,7 @@ public class TranslateHttpTrigger
 
                 if (fileData.Length > SourceDocument.MaxFileSize)
                 {
-                    errors.Add($"{fileName}: File too large. Maximum file size is 100 MB.");
+                    errors.Add($"{fileName}: File too large. Maximum file size is 30 MB.");
                     continue;
                 }
 

@@ -7,7 +7,7 @@ public class SourceDocument
     public string ContentType { get; set; } = string.Empty;
     public string BlobUrl { get; set; } = string.Empty;
 
-    public static readonly long MaxFileSize = 100 * 1024 * 1024; // 100 MB
+    public static readonly long MaxFileSize = 30 * 1024 * 1024; // 30 MB (matches Azure Static Web Apps request limit)
 
     public static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
     {

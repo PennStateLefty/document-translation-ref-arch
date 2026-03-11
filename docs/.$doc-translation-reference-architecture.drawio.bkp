@@ -1,0 +1,89 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.6.1 Chrome/142.0.7444.265 Electron/39.8.0 Safari/537.36" version="29.6.1">
+  <diagram name="Page-1" id="Os4KGDS2kLYkG9WkaJWq">
+    <mxGraphModel dx="2032" dy="834" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-4" edge="1" parent="1" source="6O-Si7oC9So0M1QIMrcw-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="6O-Si7oC9So0M1QIMrcw-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-9" connectable="0" parent="6O-Si7oC9So0M1QIMrcw-4" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Upload Documents with&lt;br&gt;Target Language" vertex="1">
+          <mxGeometry relative="1" x="-0.1024" y="1" as="geometry">
+            <mxPoint x="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-1" parent="1" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/preview/Static_Apps.svg;" value="Web Frontend&lt;br&gt;(Static Web App)" vertex="1">
+          <mxGeometry height="54" width="68" x="250" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-5" edge="1" parent="1" source="6O-Si7oC9So0M1QIMrcw-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=classic;startFill=1;" target="6O-Si7oC9So0M1QIMrcw-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-10" connectable="0" parent="6O-Si7oC9So0M1QIMrcw-5" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Upload Untranslated Docs&lt;br&gt;&lt;br&gt;Download Translated Docs" vertex="1">
+          <mxGeometry relative="1" x="-0.0889" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-7" edge="1" parent="1" source="6O-Si7oC9So0M1QIMrcw-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="6O-Si7oC9So0M1QIMrcw-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-11" connectable="0" parent="6O-Si7oC9So0M1QIMrcw-7" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Initiate Batch Translation&lt;br&gt;(Source &amp;amp; Target Storage Container)" vertex="1">
+          <mxGeometry relative="1" x="-0.0616" y="-2" as="geometry">
+            <mxPoint x="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-15" edge="1" parent="1" source="6O-Si7oC9So0M1QIMrcw-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="6O-Si7oC9So0M1QIMrcw-14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-16" connectable="0" parent="6O-Si7oC9So0M1QIMrcw-15" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Emit Metrics, Logs, and Traces" vertex="1">
+          <mxGeometry relative="1" x="0.2173" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-2" parent="1" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/compute/Function_Apps.svg;" value="Translation Orchestration&lt;br&gt;(Durable Functions)" vertex="1">
+          <mxGeometry height="60" width="68" x="550" y="407" as="geometry" />
+        </mxCell>
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-3" parent="1" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/storage/Storage_Accounts.svg;" value="Storage Account&lt;br&gt;(Blob Storage)" vertex="1">
+          <mxGeometry height="52" width="65" x="552" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-6" parent="1" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/ai_machine_learning/Translator_Text.svg;" value="" vertex="1">
+          <mxGeometry height="68" width="68" x="870" y="403" as="geometry" />
+        </mxCell>
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-8" edge="1" parent="1" source="6O-Si7oC9So0M1QIMrcw-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.988;entryY=0.515;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0.507;exitY=0.003;exitDx=0;exitDy=0;exitPerimeter=0;" target="6O-Si7oC9So0M1QIMrcw-3" value="Read &amp;amp; Write">
+          <mxGeometry relative="1" x="-0.4697" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-12" parent="1" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/identity/Managed_Identities.svg;" value="" vertex="1">
+          <mxGeometry height="36" width="37.09" x="600" y="389" as="geometry" />
+        </mxCell>
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-13" parent="1" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/identity/Managed_Identities.svg;" value="" vertex="1">
+          <mxGeometry height="36" width="37.09" x="930" y="374" as="geometry" />
+        </mxCell>
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-14" parent="1" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/devops/Application_Insights.svg;" value="Application Insights" vertex="1">
+          <mxGeometry height="63" width="44" x="563" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-17" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#d5e8d4;strokeColor=#82b366;" value="1" vertex="1">
+          <mxGeometry height="30" width="30" x="410" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-18" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#d5e8d4;strokeColor=#82b366;" value="2" vertex="1">
+          <mxGeometry height="30" width="30" x="660" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-19" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#d5e8d4;strokeColor=#82b366;" value="3" vertex="1">
+          <mxGeometry height="30" width="30" x="480" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-20" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#d5e8d4;strokeColor=#82b366;" value="4" vertex="1">
+          <mxGeometry height="30" width="30" x="820" y="395" as="geometry" />
+        </mxCell>
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-21" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#d5e8d4;strokeColor=#82b366;" value="5" vertex="1">
+          <mxGeometry height="30" width="30" x="830" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-22" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#d5e8d4;strokeColor=#82b366;" value="6" vertex="1">
+          <mxGeometry height="30" width="30" x="660" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="6O-Si7oC9So0M1QIMrcw-23" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;Happy Path Flow&lt;/h1&gt;&lt;div&gt;1. A user uploads one or more document and submits it for translation&lt;/div&gt;&lt;div&gt;2. The Function App creates a new orchestration.&amp;nbsp;&lt;/div&gt;&lt;div&gt;3. The Function App orchestration It begins by uploading the files to a container in Azure storage under a unique session identifier&lt;/div&gt;&lt;div&gt;4. The Function App&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;checks whether the payload fits within the limits of a single Document Translation Batch API call, it then creates a Document Translation batch and enters a state where it will poll for completion&lt;/span&gt;&lt;/div&gt;&lt;div&gt;5. The Document Translation service will retrieve files from the source location, translate them while preserving format, and then create new translated files into the target container path&lt;/div&gt;&lt;div&gt;6. The user is then notified the process finished and, upon selecting to download, the Function App will zip the translated files up and return them to the user as a download&lt;/div&gt;" vertex="1">
+          <mxGeometry height="240" width="435" x="720" y="510" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
